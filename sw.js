@@ -1,7 +1,7 @@
 // Bump VERSION whenever you change app files so phones pick up the update.
-const VERSION = 'habits-v6';
+const VERSION = 'habits-v7';
 const ASSETS = ['./', 'index.html', 'styles.css', 'app.js', 'manifest.webmanifest',
-  'icons/apple-touch-icon.png', 'icons/icon-192.png', 'icons/icon-512.png'];
+  'icons/apple-touch-icon-h.png', 'icons/icon-h-192.png', 'icons/icon-h-512.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(VERSION).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting()));
