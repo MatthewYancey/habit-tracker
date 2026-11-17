@@ -4,8 +4,9 @@ A simple, private habit tracker you install on your iPhone home screen. No accou
 
 ## Features
 
-- Tap any of the last 7 days to check a habit off (or undo it)
-- Daily habits, or a weekly goal (1, 3 or 5 times a week)
+- **Build** habits: tap any of the last 7 days to check it off (or undo it). Daily, or a weekly goal (1, 3 or 5 times a week)
+- **Quit** habits, for things you're staying away from (like a sobriety counter): counts days clean, longest run and milestones. Every day counts as clean unless you tap it to log a slip
+- Set a start date in the past for either kind. Build habits can mark every day since then as done
 - Streaks, a daily progress ring, and a 16-week history you can tap to fix past days
 - Pick an emoji and a color for each habit
 - Works offline, follows light/dark mode

@@ -44,9 +44,24 @@
         <h2 id="habit-dialog-title">New habit</h2>
         <button type="submit" class="link strong" value="save">Save</button>
       </div>
+      <fieldset class="field" id="type-field">
+        <legend>Type</legend>
+        <div class="segmented">
+          <label><input type="radio" name="type" value="build" checked><span>Build a habit</span></label>
+          <label><input type="radio" name="type" value="quit"><span>Quit something</span></label>
+        </div>
+      </fieldset>
       <label class="field">
-        <span>Name</span>
+        <span id="name-label">Name</span>
         <input id="f-name" name="name" required maxlength="40" placeholder="e.g. Read 20 minutes" autocomplete="off">
+      </label>
+      <label class="field">
+        <span id="start-label">Started on</span>
+        <input id="f-start" name="start" type="date">
+      </label>
+      <label class="check" id="backfill-field" hidden>
+        <input type="checkbox" id="f-backfill">
+        <span>I've kept this up since then. Mark every day as done.</span>
       </label>
       <label class="field">
         <span>Emoji</span>
@@ -56,7 +71,7 @@
         <legend>Color</legend>
         <div class="swatches" id="swatches"></div>
       </fieldset>
-      <fieldset class="field">
+      <fieldset class="field" id="goal-field">
         <legend>Goal</legend>
         <div class="segmented" id="goal-seg">
           <label><input type="radio" name="goal" value="7" checked><span>Daily</span></label>
@@ -77,7 +92,8 @@
       <button type="button" class="link" id="detail-edit">Edit</button>
     </div>
     <div class="stats" id="detail-stats"></div>
-    <p class="muted small">Last 16 weeks. Tap a day to toggle it.</p>
+    <p class="note" id="detail-note"></p>
+    <p class="muted small" id="heatmap-hint"></p>
     <div class="heatmap" id="heatmap"></div>
   </dialog>
 

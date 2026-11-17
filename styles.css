@@ -7,6 +7,7 @@
   --off: #ebe9e3;
   --accent: #d97757;
   --danger: #c4413a;
+  --slip-bg: #f6dcd9;
   --shadow: 0 1px 2px rgba(0,0,0,.05), 0 2px 8px rgba(0,0,0,.04);
   color-scheme: light dark;
 }
@@ -18,11 +19,14 @@
     --muted: #96938b;
     --line: #2e2d2a;
     --off: #2a2926;
+    --danger: #e5675f;
+    --slip-bg: #3d2523;
     --shadow: none;
   }
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+[hidden] { display: none !important; }
 html, body { margin: 0; }
 body {
   background: var(--bg);
@@ -62,7 +66,14 @@ button { font: inherit; color: inherit; }
 .day.done { color: #fff; font-size: 16px; font-weight: 700; }
 .day:active { transform: scale(.88); }
 .day.today { outline: 2px solid var(--line); outline-offset: 1px; }
-.day.done { background: var(--c); }
+.day.done, .day.clean { background: var(--c); }
+.day.clean { color: #fff; font-size: 16px; font-weight: 700; }
+.day.slip { background: var(--slip-bg); color: var(--danger); font-size: 16px; font-weight: 700; }
+.day.before { opacity: .35; cursor: default; }
+.habit .text { min-width: 0; flex: 1; }
+.badge { flex: none; text-align: right; line-height: 1; }
+.badge b { display: block; font-size: 28px; font-weight: 700; letter-spacing: -.02em; }
+.badge span { font-size: 12px; color: var(--muted); font-weight: 600; }
 
 .empty { text-align: center; padding: 60px 0; }
 .empty-emoji { font-size: 48px; margin: 0; }
@@ -103,7 +114,13 @@ button:focus:not(:focus-visible) { outline: none; }
 .stat span { font-size: 12px; color: var(--muted); }
 .heatmap { display: grid; grid-template-rows: repeat(7, 1fr); grid-auto-flow: column; gap: 3px; }
 .heatmap button { aspect-ratio: 1; border: 0; border-radius: 4px; background: var(--off); padding: 0; cursor: pointer; }
-.heatmap button.done { background: var(--c); }
+.heatmap button.done, .heatmap button.clean { background: var(--c); }
+.heatmap button.slip { background: var(--danger); }
+.heatmap button.before { opacity: .35; cursor: default; }
+.note { margin: 0 0 12px; font-size: 15px; }
+.check { display: flex; gap: 10px; align-items: flex-start; margin: -6px 0 16px; font-size: 15px; }
+.check input { width: 20px; height: 20px; margin: 1px 0 0; accent-color: var(--accent); flex: none; }
+.field input[type=date] { -webkit-appearance: none; appearance: none; min-height: 48px; text-align: left; }
 .heatmap button.future { visibility: hidden; }
 .heatmap button.today { outline: 2px solid var(--muted); outline-offset: -1px; }
 
