@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Habits">
+  <meta name="theme-color" content="#f4f3ef" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#141413" media="(prefers-color-scheme: dark)">
+  <title>Habits</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="top">
+    <div>
+      <p class="date" id="today-label"></p>
+      <h1>Habits</h1>
+    </div>
+    <button class="icon-btn" id="menu-btn" aria-label="Settings">⋯</button>
+  </header>
+
+  <section class="summary" id="summary"></section>
+
+  <main id="habit-list" class="habit-list"></main>
+
+  <div class="empty" id="empty" hidden>
+    <p class="empty-emoji">🌱</p>
+    <p>No habits yet.</p>
+    <p class="muted">Tap + to add your first one.</p>
+  </div>
+
+  <button class="fab" id="add-btn" aria-label="Add habit">+</button>
+
+  <!-- Add / edit habit -->
+  <dialog id="habit-dialog" class="sheet">
+    <form method="dialog" id="habit-form">
+      <div class="sheet-head">
+        <button type="button" class="link" data-close>Cancel</button>
+        <h2 id="habit-dialog-title">New habit</h2>
+        <button type="submit" class="link strong" value="save">Save</button>
+      </div>
+      <label class="field">
+        <span>Name</span>
+        <input id="f-name" name="name" required maxlength="40" placeholder="e.g. Read 20 minutes" autocomplete="off">
+      </label>
+      <label class="field">
+        <span>Emoji</span>
+        <input id="f-emoji" name="emoji" maxlength="4" placeholder="📚" autocomplete="off">
+      </label>
+      <fieldset class="field">
+        <legend>Color</legend>
+        <div class="swatches" id="swatches"></div>
+      </fieldset>
+      <fieldset class="field">
+        <legend>Goal</legend>
+        <div class="segmented" id="goal-seg">
+          <label><input type="radio" name="goal" value="7" checked><span>Daily</span></label>
+          <label><input type="radio" name="goal" value="5"><span>5×/wk</span></label>
+          <label><input type="radio" name="goal" value="3"><span>3×/wk</span></label>
+          <label><input type="radio" name="goal" value="1"><span>Weekly</span></label>
+        </div>
+      </fieldset>
+      <button type="button" class="danger" id="delete-btn" hidden>Delete habit</button>
+    </form>
+  </dialog>
+
+  <!-- Habit detail -->
+  <dialog id="detail-dialog" class="sheet">
+    <div class="sheet-head">
+      <button type="button" class="link" data-close>Done</button>
+      <h2 id="detail-title"></h2>
+      <button type="button" class="link" id="detail-edit">Edit</button>
+    </div>
+    <div class="stats" id="detail-stats"></div>
+    <p class="muted small">Last 16 weeks. Tap a day to toggle it.</p>
+    <div class="heatmap" id="heatmap"></div>
+  </dialog>
+
+  <!-- Settings -->
+  <dialog id="menu-dialog" class="sheet">
+    <div class="sheet-head">
+      <span></span>
+      <h2>Settings</h2>
+      <button type="button" class="link strong" data-close>Done</button>
+    </div>
+    <p class="muted small">Your data is stored only on this device. Export a backup now and then.</p>
+    <button type="button" class="row-btn" id="export-btn">Export backup (.json)</button>
+    <label class="row-btn">Import backup<input type="file" id="import-input" accept="application/json,.json" hidden></label>
+    <button type="button" class="row-btn danger-text" id="reset-btn">Erase all data</button>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>
