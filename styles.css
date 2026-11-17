@@ -219,5 +219,23 @@ dialog::backdrop { background: rgba(3, 3, 10, .75); backdrop-filter: blur(3px); 
 .heatmap button.future { visibility: hidden; }
 .heatmap button.today { outline: 1px solid var(--text); outline-offset: 1px; }
 
+/* ---------- in-app confirm ---------- */
+dialog.confirm {
+  border: 1px solid var(--magenta); background: var(--bg-2); color: var(--text);
+  width: min(88vw, 360px); padding: 0;
+  box-shadow: 0 0 30px rgba(255, 42, 109, .35);
+  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
+}
+dialog.confirm form { padding: 20px 18px 16px; }
+dialog.confirm[open] { animation: pop .16s ease-out; }
+@keyframes pop { from { transform: scale(.94); opacity: 0; } }
+.confirm-title { margin: 0 0 8px; font: 700 15px var(--display); letter-spacing: .08em; text-transform: uppercase; color: var(--magenta); text-shadow: 0 0 8px rgba(255, 42, 109, .6); }
+.confirm-msg { margin: 0 0 18px; font-size: 15px; }
+.confirm-actions { display: flex; gap: 10px; }
+.confirm-actions button { flex: 1; padding: 12px; border: 1px solid var(--line); background: transparent; font: 14px var(--mono); text-transform: uppercase; letter-spacing: .08em; cursor: pointer; }
+.confirm-cancel { color: var(--muted); }
+.confirm-ok { color: #05050a; background: var(--cyan) !important; border-color: var(--cyan) !important; box-shadow: 0 0 12px rgba(0, 240, 255, .5); }
+.confirm-ok.danger-ok { background: var(--magenta) !important; border-color: var(--magenta) !important; box-shadow: 0 0 12px rgba(255, 42, 109, .6); }
+
 .row-btn { display: block; width: 100%; text-align: left; padding: 14px 16px; margin-bottom: 8px; font: 15px var(--mono); text-transform: uppercase; letter-spacing: .06em; cursor: pointer; color: var(--cyan); }
 .danger-text { color: var(--danger); }

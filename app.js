@@ -57,11 +57,30 @@ const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(
 const findHabit = (id) => state.habits.find((h) => h.id === id);
 const isQuit = (h) => h.type === 'quit';
 
-// Returns false if the user cancelled.
-function toggle(h, key) {
+// In-app replacement for confirm()/alert(). Resolves true when OK is chosen.
+// (Native popups are silently blocked in some web views, which made actions fail.)
+function ask(title, message, { ok = 'OK', cancel = 'Cancel', danger = false } = {}) {
+  const dlg = document.getElementById('confirm-dialog');
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-msg').textContent = message;
+  const okBtn = document.getElementById('confirm-ok');
+  okBtn.textContent = ok;
+  okBtn.classList.toggle('danger-ok', danger);
+  const cancelBtn = document.getElementById('confirm-cancel');
+  cancelBtn.textContent = cancel;
+  cancelBtn.hidden = cancel === null;
+  dlg.returnValue = '';
+  dlg.showModal();
+  okBtn.focus();
+  return new Promise((resolve) => dlg.addEventListener('close', () => resolve(dlg.returnValue === 'ok'), { once: true }));
+}
+const notify = (title, message) => ask(title, message, { cancel: null });
+
+// Resolves false if nothing changed (cancelled, or before the start date).
+async function toggle(h, key) {
   if (isQuit(h)) {
     if (key < h.start) return false;
-    if (!h.log[key] && !confirm(`Log a slip on ${fmtDate(parseKey(key))}? Your clean streak will restart from the next day.`)) return false;
+    if (!h.log[key] && !(await ask('Log a slip?', `Mark ${fmtDate(parseKey(key))} as a slip. Your clean streak will restart from the next day.`, { ok: 'Log slip', danger: true }))) return false;
   }
   if (h.log[key]) delete h.log[key];
   else h.log[key] = 1;
@@ -297,7 +316,7 @@ function render() {
       });
       b.setAttribute('aria-label', `${h.name} ${d.toDateString()} ${st || 'not done'}`);
       b.style.setProperty('--c', h.color);
-      b.addEventListener('click', () => { if (toggle(h, k)) render(); });
+      b.addEventListener('click', async () => { if (await toggle(h, k)) render(); });
       return b;
     });
 
@@ -406,10 +425,11 @@ form.addEventListener('submit', (e) => {
   if (editingId && detailDialog.open) openDetail(editingId);
 });
 
-$('#delete-btn').addEventListener('click', () => {
-  const h = findHabit(editingId);
-  if (!h || !confirm(`Delete "${h.name}" and all its history?`)) return;
-  state.habits = state.habits.filter((x) => x.id !== editingId);
+$('#delete-btn').addEventListener('click', async () => {
+  const id = editingId;
+  const h = findHabit(id);
+  if (!h || !(await ask('Delete habit?', `"${h.name}" and all its history will be removed.`, { ok: 'Delete', danger: true }))) return;
+  state.habits = state.habits.filter((x) => x.id !== id);
   save();
   habitDialog.close();
   detailDialog.close();
@@ -469,7 +489,7 @@ function renderDetail() {
     const b = el('button', { className: `${st}${future ? ' future' : ''}${k === keyOf(t) ? ' today' : ''}`, disabled: future || st === 'before' });
     b.style.setProperty('--c', h.color);
     b.setAttribute('aria-label', `${d.toDateString()} ${st}`);
-    b.addEventListener('click', () => { if (toggle(h, k)) { renderDetail(); render(); } });
+    b.addEventListener('click', async () => { if (await toggle(h, k)) { renderDetail(); render(); } });
     cells.push(b);
   }
   $('#heatmap').replaceChildren(...cells);
@@ -500,18 +520,18 @@ $('#import-input').addEventListener('change', async (e) => {
   try {
     const data = JSON.parse(await f.text());
     if (!data || !Array.isArray(data.habits)) throw new Error('bad file');
-    if (!confirm(`Replace current data with ${data.habits.length} habit(s) from the backup?`)) return;
+    if (!(await ask('Import backup?', `Replace your current data with ${data.habits.length} habit(s) from the backup.`, { ok: 'Replace', danger: true }))) return;
     state = migrate(data);
     save();
     render();
     menuDialog.close();
   } catch {
-    alert("That file doesn't look like a Habits backup.");
+    notify('Import failed', "That file doesn't look like a Habits backup.");
   }
 });
 
-$('#reset-btn').addEventListener('click', () => {
-  if (!confirm('Erase all habits and history? This cannot be undone.')) return;
+$('#reset-btn').addEventListener('click', async () => {
+  if (!(await ask('Erase everything?', 'All habits and history on this device will be deleted. This cannot be undone.', { ok: 'Erase', danger: true }))) return;
   state = { habits: [] };
   save();
   render();

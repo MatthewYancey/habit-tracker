@@ -117,6 +117,18 @@
     <button type="button" class="row-btn danger-text" id="reset-btn">Erase all data</button>
   </dialog>
 
+  <!-- In-app confirm/alert (native popups are blocked in some web views) -->
+  <dialog id="confirm-dialog" class="confirm">
+    <form method="dialog">
+      <p class="confirm-title" id="confirm-title"></p>
+      <p class="confirm-msg" id="confirm-msg"></p>
+      <div class="confirm-actions">
+        <button value="cancel" class="confirm-cancel" id="confirm-cancel">Cancel</button>
+        <button value="ok" class="confirm-ok" id="confirm-ok">OK</button>
+      </div>
+    </form>
+  </dialog>
+
   <script src="app.js"></script>
 </body>
 </html>
