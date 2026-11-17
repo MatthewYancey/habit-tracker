@@ -1,7 +1,16 @@
 'use strict';
 
 const STORE_KEY = 'habits.v1';
-const COLORS = ['#d97757', '#e0a43a', '#6aa84f', '#3d9a8b', '#4a86c8', '#7b6cd9', '#c95b9b', '#8a8780'];
+const COLORS = ['#00f0ff', '#ff2a6d', '#f9f002', '#39ff14', '#b026ff', '#ff8a00', '#ff00c8', '#2d7dff'];
+const OLD_COLORS = ['#d97757', '#e0a43a', '#6aa84f', '#3d9a8b', '#4a86c8', '#7b6cd9', '#c95b9b', '#8a8780'];
+// Outermost ring first.
+const RING_UNITS = [
+  { key: 'year', label: 'Years', color: '#ff00c8' },
+  { key: 'month', label: 'Months', color: '#f9f002' },
+  { key: 'week', label: 'Weeks', color: '#00f0ff' },
+  { key: 'day', label: 'Days', color: '#39ff14' },
+];
+const MONTH_DAYS = 30.4375;
 const DAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const MILESTONES = [1, 3, 7, 14, 30, 60, 90, 180, 270, 365];
 
@@ -36,6 +45,8 @@ function migrate(s) {
     h.log = h.log || {};
     if (!h.start) h.start = [h.created, ...Object.keys(h.log)].filter(Boolean).sort()[0] || keyOf(today());
     if (h.type === 'build' && !h.goal) h.goal = 7;
+    const old = OLD_COLORS.indexOf(h.color);
+    if (old >= 0) h.color = COLORS[old];
   }
   return s;
 }
@@ -134,6 +145,100 @@ function roughDuration(n) {
   return '';
 }
 
+// ---------- time rings ----------
+// Each ring: { value: text shown in the legend, sub: smaller caption, fill: 0..1 }
+function quitRings(h) {
+  const n = cleanDays(h);
+  const y = Math.floor(n / 365);
+  const r = n - y * 365;
+  const m = Math.floor(r / MONTH_DAYS);
+  const rem = r - Math.floor(m * MONTH_DAYS);
+  const w = Math.floor(rem / 7);
+  const d = rem % 7;
+  const now = new Date();
+  const hours = now.getHours() + now.getMinutes() / 60;
+  return {
+    center: [n, n === 1 ? 'day clean' : 'days clean'],
+    rings: {
+      year: { value: y, sub: `${Math.round((r / 365) * 100)}% to next`, fill: r / 365 },
+      month: { value: m, sub: `${Math.round((rem / MONTH_DAYS) * 100)}% to next`, fill: rem / MONTH_DAYS },
+      week: { value: w, sub: `${d}/7 days`, fill: d / 7 },
+      day: { value: d, sub: `+${Math.floor(hours)}h today`, fill: hours / 24 },
+    },
+  };
+}
+
+// Build habits: how much of each calendar period's goal is done.
+function buildRings(h) {
+  const t = today();
+  const tk = keyOf(t);
+  const start = parseKey(h.start);
+  const period = (from, to) => {
+    const a = from < start ? start : from;
+    let done = 0;
+    for (let d = new Date(a); d <= t; d = addDays(d, 1)) if (h.log[keyOf(d)]) done++;
+    const target = Math.max(1, Math.round((daysBetween(a, to) + 1) * h.goal / 7));
+    return { value: `${done}/${target}`, sub: `${Math.round(Math.min(1, done / target) * 100)}%`, fill: Math.min(1, done / target) };
+  };
+  const wk = startOfWeek(t);
+  const weekDone = weekCount(h, wk);
+  const s = buildStreak(h);
+  return {
+    center: [s.n, `${s.unit} streak`],
+    rings: {
+      year: period(new Date(t.getFullYear(), 0, 1), new Date(t.getFullYear(), 11, 31)),
+      month: period(new Date(t.getFullYear(), t.getMonth(), 1), new Date(t.getFullYear(), t.getMonth() + 1, 0)),
+      week: { value: `${weekDone}/${h.goal}`, sub: 'this week', fill: Math.min(1, weekDone / h.goal) },
+      day: { value: h.log[tk] ? 'DONE' : '—', sub: 'today', fill: h.log[tk] ? 1 : 0 },
+    },
+  };
+}
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+let ringsAnimated = false;
+
+function renderRings(h) {
+  const { center, rings } = isQuit(h) ? quitRings(h) : buildRings(h);
+  const svg = $('#rings');
+  svg.replaceChildren();
+  const defs = document.createElementNS(SVG_NS, 'defs');
+  defs.innerHTML = '<filter id="glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>';
+  svg.append(defs);
+
+  const stroke = 13, gap = 5;
+  RING_UNITS.forEach((u, i) => {
+    const r = 120 - 10 - stroke / 2 - i * (stroke + gap);
+    const c = 2 * Math.PI * r;
+    const fill = Math.max(0, Math.min(1, rings[u.key].fill));
+    const track = document.createElementNS(SVG_NS, 'circle');
+    Object.entries({ cx: 120, cy: 120, r, fill: 'none', stroke: u.color, 'stroke-opacity': .14, 'stroke-width': stroke }).forEach(([k, v]) => track.setAttribute(k, v));
+    const arc = document.createElementNS(SVG_NS, 'circle');
+    Object.entries({ cx: 120, cy: 120, r, fill: 'none', stroke: u.color, 'stroke-width': stroke, 'stroke-linecap': 'round',
+      'stroke-dasharray': c, 'stroke-dashoffset': ringsAnimated ? c * (1 - fill) : c, transform: 'rotate(-90 120 120)', filter: 'url(#glow)', class: 'ring-arc' })
+      .forEach(([k, v]) => arc.setAttribute(k, v));
+    if (fill === 0) arc.setAttribute('stroke-opacity', 0);
+    arc.dataset.target = c * (1 - fill);
+    svg.append(track, arc);
+  });
+  // Sweep the arcs in the first time the sheet opens.
+  if (!ringsAnimated) {
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      svg.querySelectorAll('.ring-arc').forEach((a) => a.setAttribute('stroke-dashoffset', a.dataset.target));
+    }));
+    ringsAnimated = true;
+  }
+
+  $('#rings-center').replaceChildren(el('b', { textContent: center[0] }), el('span', { textContent: center[1] }));
+  $('#rings-legend').replaceChildren(...RING_UNITS.map((u) => {
+    const ring = rings[u.key];
+    const item = el('div', { className: 'legend-item' },
+      el('i'),
+      el('div', {}, el('b', { textContent: ring.value }), el('span', { textContent: `${u.label} · ${ring.sub}` })));
+    item.style.setProperty('--u', u.color);
+    return item;
+  }));
+}
+
 // ---------- rendering ----------
 const $ = (s) => document.querySelector(s);
 const el = (tag, props = {}, ...kids) => {
@@ -180,7 +285,6 @@ function render() {
       ),
     );
     if (badge) info.append(badge);
-    info.querySelector('.emoji').style.background = h.color + '26';
     info.addEventListener('click', () => openDetail(h.id));
 
     const dayBtns = days.map((d, i) => {
@@ -197,7 +301,9 @@ function render() {
       return b;
     });
 
-    list.append(el('div', { className: 'habit' + (isQuit(h) ? ' quit' : '') }, info, el('div', { className: 'days' }, ...dayBtns)));
+    const card = el('div', { className: 'habit' + (isQuit(h) ? ' quit' : '') }, info, el('div', { className: 'days' }, ...dayBtns));
+    card.style.setProperty('--hc', h.color);
+    list.append(card);
   }
 
   $('#empty').hidden = state.habits.length > 0;
@@ -232,6 +338,8 @@ function renderSwatches() {
   $('#swatches').replaceChildren(...COLORS.map((c) => {
     const b = el('button', { type: 'button', className: 'swatch' });
     b.style.background = c;
+    b.style.color = c;
+    b.style.setProperty('--sc', c);
     b.setAttribute('aria-label', `Color ${c}`);
     b.setAttribute('aria-pressed', String(c === pickedColor));
     b.addEventListener('click', () => { pickedColor = c; renderSwatches(); });
@@ -312,17 +420,24 @@ $('#delete-btn').addEventListener('click', () => {
 const detailDialog = $('#detail-dialog');
 let detailId = null;
 
+let ringTimer = null;
 function openDetail(id) {
+  if (!detailDialog.open) ringsAnimated = false;
   detailId = id;
   renderDetail();
   if (!detailDialog.open) detailDialog.showModal();
+  // Keep the hours-today ring moving while the sheet is open.
+  clearInterval(ringTimer);
+  ringTimer = setInterval(() => { const h = findHabit(detailId); if (h && detailDialog.open) renderRings(h); }, 60000);
 }
+detailDialog.addEventListener('close', () => clearInterval(ringTimer));
 
 function renderDetail() {
   const h = findHabit(detailId);
   if (!h) return;
   $('#detail-title').textContent = `${h.emoji ? h.emoji + ' ' : ''}${h.name}`;
   const t = today();
+  renderRings(h);
 
   let stats, note;
   if (isQuit(h)) {
@@ -330,16 +445,13 @@ function renderDetail() {
     const next = nextMilestone(n);
     const rough = roughDuration(n);
     const nSlips = slips(h).length;
-    stats = [[n, n === 1 ? 'day clean' : 'days clean'], [longestClean(h), 'longest run'], [nSlips, nSlips === 1 ? 'slip' : 'slips']];
+    const best = longestClean(h);
+    stats = [[best, best === 1 ? 'day best run' : 'days best run'], [nSlips, nSlips === 1 ? 'slip' : 'slips'], [milestoneLabel(next).replace(/ .*/, ''), `next: ${milestoneLabel(next).replace(/^\S+ /, '')}`]];
     note = `Clean since ${fmtDate(cleanSince(h), true)}${rough ? ` (${rough})` : ''}. `
       + `Next milestone: ${milestoneLabel(next)}, ${plural(next - n, 'day')} to go.`;
     $('#heatmap-hint').textContent = 'Last 16 weeks. Tap a day to log or remove a slip.';
   } else {
-    const s = buildStreak(h);
-    const third = h.goal >= 7
-      ? [bestDailyStreak(h), 'best streak']
-      : [`${weekCount(h, startOfWeek(t))}/${h.goal}`, 'this week'];
-    stats = [[s.n, `current (${s.unit})`], third, [Object.keys(h.log).length, 'total days']];
+    stats = [[bestDailyStreak(h), 'best day streak'], [Object.keys(h.log).length, 'total days'], [h.goal >= 7 ? 'DAILY' : `${h.goal}×`, h.goal >= 7 ? 'goal' : 'per week']];
     note = `Started ${fmtDate(parseKey(h.start), true)}.`;
     $('#heatmap-hint').textContent = 'Last 16 weeks. Tap a day to toggle it.';
   }

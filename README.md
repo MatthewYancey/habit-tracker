@@ -9,7 +9,8 @@ A simple, private habit tracker you install on your iPhone home screen. No accou
 - Set a start date in the past for either kind. Build habits can mark every day since then as done
 - Streaks, a daily progress ring, and a 16-week history you can tap to fix past days
 - Pick an emoji and a color for each habit
-- Works offline, follows light/dark mode
+- Tap a habit for concentric time rings: years, months, weeks and days clean (quit habits) or goal progress per period (build habits)
+- Cyberpunk neon theme; works offline
 - Export and import backups as JSON (Settings, the ⋯ button)
 
 ## Run it locally

@@ -7,9 +7,11 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Habits">
-  <meta name="theme-color" content="#f4f3ef" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#141413" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#07070d">
   <title>Habits</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Share+Tech+Mono&display=swap">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="icon" href="icons/icon-192.png">
@@ -19,7 +21,7 @@
   <header class="top">
     <div>
       <p class="date" id="today-label"></p>
-      <h1>Habits</h1>
+      <h1 data-text="HABITS">HABITS</h1>
     </div>
     <button class="icon-btn" id="menu-btn" aria-label="Settings">⋯</button>
   </header>
@@ -29,9 +31,9 @@
   <main id="habit-list" class="habit-list"></main>
 
   <div class="empty" id="empty" hidden>
-    <p class="empty-emoji">🌱</p>
-    <p>No habits yet.</p>
-    <p class="muted">Tap + to add your first one.</p>
+    <p class="empty-glyph">[ NO SIGNAL ]</p>
+    <p>No habits tracked yet.</p>
+    <p class="muted">Tap + to jack in your first one.</p>
   </div>
 
   <button class="fab" id="add-btn" aria-label="Add habit">+</button>
@@ -91,6 +93,11 @@
       <h2 id="detail-title"></h2>
       <button type="button" class="link" id="detail-edit">Edit</button>
     </div>
+    <div class="rings-wrap">
+      <svg class="rings" id="rings" viewBox="0 0 240 240" role="img" aria-label="Time rings"></svg>
+      <div class="rings-center" id="rings-center"></div>
+    </div>
+    <div class="legend" id="rings-legend"></div>
     <div class="stats" id="detail-stats"></div>
     <p class="note" id="detail-note"></p>
     <p class="muted small" id="heatmap-hint"></p>
