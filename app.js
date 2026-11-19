@@ -11,7 +11,6 @@ const RING_UNITS = [
   { key: 'day', label: 'Days', color: '#39ff14' },
 ];
 const MONTH_DAYS = 30.4375;
-const DAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const MILESTONES = [1, 3, 7, 14, 30, 60, 90, 180, 270, 365];
 
 // Habit shape:
@@ -123,6 +122,37 @@ function bestDailyStreak(h) {
     prev = parseKey(k);
   }
   return best;
+}
+
+// First day of the current streak, or null when there is no streak.
+function streakStart(h) {
+  const s = buildStreak(h);
+  if (!s.n) return null;
+  const t = today();
+  if (h.goal >= 7) {
+    const end = h.log[keyOf(t)] ? t : addDays(t, -1);
+    return addDays(end, -(s.n - 1));
+  }
+  const thisWeek = startOfWeek(t);
+  const weeksBack = weekCount(h, thisWeek) >= h.goal ? s.n - 1 : s.n;
+  return addDays(thisWeek, -7 * weeksBack);
+}
+
+// ---------- elapsed time (calendar years / months / days / hours) ----------
+function addMonths(d, n) {
+  const y = d.getFullYear(), m = d.getMonth() + n;
+  const last = new Date(y, m + 1, 0).getDate(); // clamp e.g. Jan 31 + 1 month -> Feb 28
+  return new Date(y, m, Math.min(d.getDate(), last), d.getHours(), d.getMinutes());
+}
+function elapsed(from, now = new Date()) {
+  if (now <= from) return { years: 0, months: 0, days: 0, hours: 0 };
+  let months = 0;
+  while (addMonths(from, months + 1) <= now) months++;
+  const anchor = addMonths(from, months);
+  let days = 0;
+  while (addDays(anchor, days + 1) <= now) days++;
+  const hours = Math.floor((now - addDays(anchor, days)) / 36e5);
+  return { years: Math.floor(months / 12), months: months % 12, days, hours };
 }
 
 // ---------- quit-habit stats ----------
@@ -277,23 +307,23 @@ function render() {
   const tk = keyOf(t);
   $('#today-label').textContent = t.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
 
-  const days = Array.from({ length: 7 }, (_, i) => addDays(t, i - 6));
   const list = $('#habit-list');
   list.replaceChildren();
 
   for (const h of state.habits) {
-    let meta, badge = null;
+    let meta, side = null, since;
     if (isQuit(h)) {
-      const n = cleanDays(h);
-      meta = `Clean since ${fmtDate(cleanSince(h))}`;
-      badge = el('div', { className: 'badge' }, el('b', { textContent: n }), el('span', { textContent: n === 1 ? 'day' : 'days' }));
-      badge.style.color = h.color;
+      since = cleanSince(h);
+      meta = `Clean since ${fmtDate(since)}`;
     } else {
-      const s = buildStreak(h);
+      since = streakStart(h);
       const wk = weekCount(h, startOfWeek(t));
-      meta = h.goal >= 7
-        ? (s.n ? `🔥 ${s.n} ${s.unit}` : 'Daily')
-        : `${wk}/${h.goal} this week${s.n ? ` · 🔥 ${s.n}` : ''}`;
+      meta = (h.goal >= 7 ? 'Daily' : `${wk}/${h.goal} this week`) + (since ? ' · streak' : ' · no streak yet');
+      // One-tap check-off for today (past days are edited in the detail grid).
+      const done = !!h.log[tk];
+      side = el('button', { className: 'today-btn' + (done ? ' done' : ''), textContent: done ? '✓' : '+' });
+      side.setAttribute('aria-label', `${h.name}: ${done ? 'done today, tap to undo' : 'mark done today'}`);
+      side.addEventListener('click', async (e) => { e.stopPropagation(); if (await toggle(h, tk)) render(); });
     }
 
     const info = el('div', { className: 'info' },
@@ -303,25 +333,16 @@ function render() {
         el('div', { className: 'meta', textContent: meta }),
       ),
     );
-    if (badge) info.append(badge);
+    if (side) info.append(side);
     info.addEventListener('click', () => openDetail(h.id));
 
-    const dayBtns = days.map((d, i) => {
-      const k = keyOf(d);
-      const st = dayState(h, k);
-      const b = el('button', {
-        className: `day ${st}${i === 6 ? ' today' : ''}`,
-        textContent: st === 'done' || st === 'clean' ? '✓' : st === 'slip' ? '✕' : DAY_LETTERS[d.getDay()],
-        disabled: st === 'before',
-      });
-      b.setAttribute('aria-label', `${h.name} ${d.toDateString()} ${st || 'not done'}`);
-      b.style.setProperty('--c', h.color);
-      b.addEventListener('click', async () => { if (await toggle(h, k)) render(); });
-      return b;
-    });
+    const p = since ? elapsed(since) : { years: 0, months: 0, days: 0, hours: 0 };
+    const boxes = [['years', 'Years'], ['months', 'Months'], ['days', 'Days'], ['hours', 'Hours']].map(([k, label]) =>
+      el('div', { className: 'unit' + (p[k] ? '' : ' zero') }, el('b', { textContent: p[k] }), el('span', { textContent: label })));
 
-    const card = el('div', { className: 'habit' + (isQuit(h) ? ' quit' : '') }, info, el('div', { className: 'days' }, ...dayBtns));
+    const card = el('div', { className: 'habit' + (isQuit(h) ? ' quit' : '') }, info, el('div', { className: 'units' }, ...boxes));
     card.style.setProperty('--hc', h.color);
+    card.querySelector('.units').addEventListener('click', () => openDetail(h.id));
     list.append(card);
   }
 
@@ -543,11 +564,9 @@ document.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('cli
 document.querySelectorAll('dialog').forEach((d) => d.addEventListener('click', (e) => { if (e.target === d) d.close(); }));
 $('#add-btn').addEventListener('click', () => openForm());
 
-// Re-render when the day rolls over or the app returns to the foreground.
-let lastDay = keyOf(today());
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && keyOf(today()) !== lastDay) { lastDay = keyOf(today()); render(); }
-});
+// Refresh when the app returns to the foreground, and every minute so the hour counters tick.
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') render(); });
+setInterval(() => { if (document.visibilityState === 'visible') render(); }, 60000);
 
 render();
 
