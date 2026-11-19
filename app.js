@@ -1,14 +1,18 @@
 'use strict';
 
 const STORE_KEY = 'habits.v1';
-const COLORS = ['#00f0ff', '#ff2a6d', '#f9f002', '#39ff14', '#b026ff', '#ff8a00', '#ff00c8', '#2d7dff'];
-const OLD_COLORS = ['#d97757', '#e0a43a', '#6aa84f', '#3d9a8b', '#4a86c8', '#7b6cd9', '#c95b9b', '#8a8780'];
+const COLORS = ['#ff7a00', '#8e44c9', '#3dff6e', '#e60012', '#ffc400', '#2f6bff', '#ff4f9a', '#e8e2d4'];
+// Earlier palettes, mapped by position onto COLORS when a habit is loaded.
+const OLD_PALETTES = [
+  ['#d97757', '#e0a43a', '#6aa84f', '#3d9a8b', '#4a86c8', '#7b6cd9', '#c95b9b', '#8a8780'],
+  ['#00f0ff', '#ff2a6d', '#f9f002', '#39ff14', '#b026ff', '#ff8a00', '#ff00c8', '#2d7dff'],
+];
 // Outermost ring first.
 const RING_UNITS = [
-  { key: 'year', label: 'Years', color: '#ff00c8' },
-  { key: 'month', label: 'Months', color: '#f9f002' },
-  { key: 'week', label: 'Weeks', color: '#00f0ff' },
-  { key: 'day', label: 'Days', color: '#39ff14' },
+  { key: 'year', label: 'Years' },
+  { key: 'month', label: 'Months' },
+  { key: 'week', label: 'Weeks' },
+  { key: 'day', label: 'Days' },
 ];
 const MONTH_DAYS = 30.4375;
 const MILESTONES = [1, 3, 7, 14, 30, 60, 90, 180, 270, 365];
@@ -44,8 +48,10 @@ function migrate(s) {
     h.log = h.log || {};
     if (!h.start) h.start = [h.created, ...Object.keys(h.log)].filter(Boolean).sort()[0] || keyOf(today());
     if (h.type === 'build' && !h.goal) h.goal = 7;
-    const old = OLD_COLORS.indexOf(h.color);
-    if (old >= 0) h.color = COLORS[old];
+    for (const pal of OLD_PALETTES) {
+      const old = pal.indexOf(h.color);
+      if (old >= 0) { h.color = COLORS[old]; break; }
+    }
   }
   return s;
 }
@@ -255,6 +261,9 @@ function renderRings(h) {
   svg.append(defs);
 
   const stroke = 13, gap = 5;
+  // Ring colors come from the theme (--ring-year, --ring-month, ...).
+  const css = getComputedStyle(document.documentElement);
+  for (const u of RING_UNITS) u.color = css.getPropertyValue(`--ring-${u.key}`).trim() || '#888';
   RING_UNITS.forEach((u, i) => {
     const r = 120 - 10 - stroke / 2 - i * (stroke + gap);
     const c = 2 * Math.PI * r;
@@ -337,8 +346,11 @@ function render() {
     info.addEventListener('click', () => openDetail(h.id));
 
     const p = since ? elapsed(since) : { years: 0, months: 0, days: 0, hours: 0 };
-    const boxes = [['years', 'Years'], ['months', 'Months'], ['days', 'Days'], ['hours', 'Hours']].map(([k, label]) =>
-      el('div', { className: 'unit' + (p[k] ? '' : ' zero') }, el('b', { textContent: p[k] }), el('span', { textContent: label })));
+    const boxes = [['years', 'Years', '年'], ['months', 'Months', '月'], ['days', 'Days', '日'], ['hours', 'Hours', '時']].map(([k, label, jp]) => {
+      const box = el('div', { className: 'unit' + (p[k] ? '' : ' zero') }, el('b', { textContent: p[k] }), el('span', { textContent: label }));
+      box.dataset.jp = jp;
+      return box;
+    });
 
     const card = el('div', { className: 'habit' + (isQuit(h) ? ' quit' : '') }, info, el('div', { className: 'units' }, ...boxes));
     card.style.setProperty('--hc', h.color);
