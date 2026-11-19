@@ -1,5 +1,5 @@
 // Bump VERSION whenever you change app files so phones pick up the update.
-const VERSION = 'habits-v9';
+const VERSION = 'habits-v10';
 const ASSETS = ['./', 'index.html', 'styles.css', 'app.js', 'manifest.webmanifest',
   'icons/apple-touch-icon-h.png', 'icons/icon-h-192.png', 'icons/icon-h-512.png'];
 

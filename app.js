@@ -353,7 +353,6 @@ function render() {
     });
 
     const card = el('div', { className: 'habit' + (isQuit(h) ? ' quit' : '') }, info, el('div', { className: 'units' }, ...boxes));
-    card.style.setProperty('--hc', h.color);
     card.querySelector('.units').addEventListener('click', () => openDetail(h.id));
     list.append(card);
   }
@@ -387,6 +386,7 @@ let editingId = null;
 let pickedColor = COLORS[0];
 
 function renderSwatches() {
+  if (!$('#swatches')) return; // color picker removed: all cards share the theme color
   $('#swatches').replaceChildren(...COLORS.map((c) => {
     const b = el('button', { type: 'button', className: 'swatch' });
     b.style.background = c;
@@ -520,7 +520,6 @@ function renderDetail() {
     const future = d > t;
     const st = dayState(h, k);
     const b = el('button', { className: `${st}${future ? ' future' : ''}${k === keyOf(t) ? ' today' : ''}`, disabled: future || st === 'before' });
-    b.style.setProperty('--c', h.color);
     b.setAttribute('aria-label', `${d.toDateString()} ${st}`);
     b.addEventListener('click', async () => { if (await toggle(h, k)) { renderDetail(); render(); } });
     cells.push(b);
